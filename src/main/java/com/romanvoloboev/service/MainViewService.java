@@ -4,6 +4,8 @@ import com.darkprograms.speech.microphone.Microphone;
 import com.darkprograms.speech.recognizer.GSpeechDuplex;
 import com.darkprograms.speech.recognizer.GSpeechResponseListener;
 import com.darkprograms.speech.recognizer.GoogleResponse;
+import com.romanvoloboev.controller.Trie;
+import com.romanvoloboev.controller.TrieMap;
 import javafx.scene.control.TextArea;
 import net.sourceforge.javaflacencoder.FLACFileWriter;
 import org.slf4j.Logger;
@@ -43,6 +45,30 @@ public class MainViewService implements GSpeechResponseListener {
     }
 
     public void startRecord(TextArea textArea) throws LineUnavailableException, InterruptedException {
+        Trie<String> stringTrie = new Trie<>();
+        stringTrie.add("Hello");
+        stringTrie.add("Hell");
+        stringTrie.add("Help");
+        stringTrie.add("мама мыла раму");
+        stringTrie.add("мама мыла ирму");
+        stringTrie.add("мама любила раму");
+
+        log.info(stringTrie.toString());
+        log.info("{}", stringTrie.contains("Hell"));
+
+
+        TrieMap<String, String> stringTrieMap = new TrieMap<>();
+        stringTrieMap.put("Hello", "---hello");
+        stringTrieMap.put("Hell", "---hell");
+        stringTrieMap.put("Help", "---help");
+
+        log.info(stringTrieMap.toString());
+
+        log.info("{}", stringTrieMap.get("Hell"));
+
+
+
+
         log.info("--- Starting Speech Recognition, Microphone State is: {}",  microphone.getState());
         log.info("--- AudioFormat: {}", microphone.getAudioFormat());
 
