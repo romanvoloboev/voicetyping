@@ -73,6 +73,12 @@
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
         </dependency>
+
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-speech</artifactId>
+			<version>0.25.0-alpha</version>
+		</dependency>
 	</dependencies>
 
 	<build>

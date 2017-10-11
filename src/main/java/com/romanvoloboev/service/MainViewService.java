@@ -4,8 +4,11 @@ import com.darkprograms.speech.microphone.Microphone;
 import com.darkprograms.speech.recognizer.GSpeechDuplex;
 import com.darkprograms.speech.recognizer.GSpeechResponseListener;
 import com.darkprograms.speech.recognizer.GoogleResponse;
+import com.google.cloud.speech.v1.RecognitionConfig;
+import com.google.cloud.speech.v1.SpeechClient;
 import com.romanvoloboev.controller.Trie;
 import com.romanvoloboev.controller.TrieMap;
+import com.romanvoloboev.utils.GoogleSpeechRecognizeService;
 import javafx.scene.control.TextArea;
 import net.sourceforge.javaflacencoder.FLACFileWriter;
 import org.slf4j.Logger;
@@ -45,6 +48,7 @@ public class MainViewService implements GSpeechResponseListener {
     }
 
     public void startRecord(TextArea textArea) throws LineUnavailableException, InterruptedException {
+
         Trie<String> stringTrie = new Trie<>();
         stringTrie.add("Hello");
         stringTrie.add("Hell");
@@ -66,45 +70,48 @@ public class MainViewService implements GSpeechResponseListener {
 
         log.info("{}", stringTrieMap.get("Hell"));
 
+        GoogleSpeechRecognizeService googleSpeechRecognizeService = new GoogleSpeechRecognizeService(new com.romanvoloboev.utils.Microphone());
+        googleSpeechRecognizeService.startRecognition();
+        googleSpeechRecognizeService.stopRecognition();
 
 
 
-        log.info("--- Starting Speech Recognition, Microphone State is: {}",  microphone.getState());
-        log.info("--- AudioFormat: {}", microphone.getAudioFormat());
-
-        duplex.recognize(microphone.getTargetDataLine(), microphone.getAudioFormat());
-
-        duplex.addResponseListener(new GSpeechResponseListener() {
-            String old_text = "";
-
-            public void onResponse(GoogleResponse gr) {
-                log.info("--- onResponse");
-                String output = "";
-                output = gr.getResponse();
-                log.info("--- resp: "+gr.getResponse());
-                if (gr.getResponse() == null) {
-                    this.old_text = textArea.getText();
-                    if (this.old_text.contains("(")) {
-                        this.old_text = this.old_text.substring(0, this.old_text.indexOf('('));
-                    }
-                    log.info("Paragraph Line Added");
-                    this.old_text = ( textArea.getText() + "\n" );
-                    this.old_text = this.old_text.replace(")", "").replace("( ", "");
-                    textArea.setText(this.old_text);
-                    return;
-                }
-                if (output.contains("(")) {
-                    output = output.substring(0, output.indexOf('('));
-                }
-                if (!gr.getOtherPossibleResponses().isEmpty()) {
-                    output = output + " (" + (String) gr.getOtherPossibleResponses().get(0) + ")";
-                }
-                log.info(output);
-                textArea.setText("");
-                textArea.appendText(this.old_text);
-                textArea.appendText(output);
-            }
-        });
+//        log.info("--- Starting Speech Recognition, Microphone State is: {}",  microphone.getState());
+//        log.info("--- AudioFormat: {}", microphone.getAudioFormat());
+//
+//        duplex.recognize(microphone.getTargetDataLine(), microphone.getAudioFormat());
+//
+//        duplex.addResponseListener(new GSpeechResponseListener() {
+//            String old_text = "";
+//
+//            public void onResponse(GoogleResponse gr) {
+//                log.info("--- onResponse: {}", gr.toString());
+//                String output = "";
+//                output = gr.getResponse();
+//                log.info("--- resp: "+gr.getResponse());
+//                if (gr.getResponse() == null) {
+//                    this.old_text = textArea.getText();
+//                    if (this.old_text.contains("(")) {
+//                        this.old_text = this.old_text.substring(0, this.old_text.indexOf('('));
+//                    }
+//                    log.info("Paragraph Line Added");
+//                    this.old_text = ( textArea.getText() + "\n" );
+//                    this.old_text = this.old_text.replace(")", "").replace("( ", "");
+//                    textArea.setText(this.old_text);
+//                    return;
+//                }
+//                if (output.contains("(")) {
+//                    output = output.substring(0, output.indexOf('('));
+//                }
+//                if (!gr.getOtherPossibleResponses().isEmpty()) {
+//                    output = output + " (" + (String) gr.getOtherPossibleResponses().get(0) + ")";
+//                }
+//                log.info(output);
+//                textArea.setText("");
+//                textArea.appendText(this.old_text);
+//                textArea.appendText(output);
+//            }
+//        });
 
     }
 
