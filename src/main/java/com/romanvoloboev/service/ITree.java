@@ -1,4 +1,4 @@
-package com.romanvoloboev.controller;
+package com.romanvoloboev.service;
 
 /**
  * A tree can be defined recursively (locally) as a collection of nodes (starting at a root node),

@@ -1,4 +1,4 @@
-package com.romanvoloboev.controller;
+package com.romanvoloboev.service;
 
 import java.util.Arrays;
 

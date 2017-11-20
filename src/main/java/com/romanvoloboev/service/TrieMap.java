@@ -1,4 +1,4 @@
-package com.romanvoloboev.controller;
+package com.romanvoloboev.service;
 
 /**
  * A trie used to store key->values pairs, this is an implementation of an

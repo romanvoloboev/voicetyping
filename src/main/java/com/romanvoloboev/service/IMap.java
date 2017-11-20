@@ -1,4 +1,4 @@
-package com.romanvoloboev.controller;
+package com.romanvoloboev.service;
 
 /**
  * In computer science, an associative array, map, or dictionary is an abstract

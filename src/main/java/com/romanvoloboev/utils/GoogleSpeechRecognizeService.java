@@ -1,50 +1,55 @@
 package com.romanvoloboev.utils;
 
+import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.rpc.ApiStreamObserver;
 import com.google.api.gax.rpc.BidiStreamingCallable;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.Credentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ByteString;
-import io.grpc.ManagedChannel;
-import io.grpc.auth.ClientAuthInterceptor;
+import javafx.scene.control.TextArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.ResourceUtils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 /**
  * Created at 11.10.17
  *
  * @author romanvoloboev
  */
-public class GoogleSpeechRecognizeService implements ApiStreamObserver<StreamingRecognizeResponse> {
-    private final SettableFuture<List<StreamingRecognizeResponse>> future = SettableFuture.create();
+public class GoogleSpeechRecognizeService {
+    private static final Logger log = LoggerFactory.getLogger(GoogleSpeechRecognizeService.class);
     private final List<StreamingRecognizeResponse> messages = new ArrayList<>();
     private ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
     private final Microphone microphone;
     private int buffSize;
 
+
+    private Credentials loadCredentialsFromFile() throws IOException {
+        String credentialsFile = "classpath:credentials.json";
+        log.info("Loading credentials from specified file: {}", credentialsFile);
+        try (FileInputStream fileInputStream = new FileInputStream(ResourceUtils.getFile(credentialsFile))) {
+            Credentials credentials = ServiceAccountCredentials.fromStream(fileInputStream);
+            log.info("Successfully loaded from file.");
+            return credentials;
+        }
+    }
+
     public GoogleSpeechRecognizeService(Microphone microphone) {
         this.microphone = microphone;
         buffSize = microphone.getTargetDataLine().getBufferSize();
-        System.setProperty("GOOGLE_APPLICATION_CREDENTIALS", "classpath:resources/speech-cloud-api.json");
     }
 
 
-    public void startRecognition() {
+    public void startRecognition(TextArea textArea) {
         microphone.startRecording();
-
-        InputStream credentials = ClassLoader.getSystemResourceAsStream("speech-cloud-api.json");
-        try {
-            ManagedChannel managedChannel = createChannel("speech.googleapis.com", 443, credentials);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
+        initRecognition();
         new Thread(new Runnable() {
             byte data[] = new byte[buffSize];
             @Override
@@ -67,18 +72,16 @@ public class GoogleSpeechRecognizeService implements ApiStreamObserver<Streaming
     }
 
     private void recognizeData(byte[] data, int size) {
-        initRecognition();
-        StreamingRecognizeRequest request = StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build();
-        requestObserver.onNext(request);
+        requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
     private void initRecognition() {
         try {
-            SpeechClient speech = SpeechClient.create();
+            SpeechSettings speechSettings = SpeechSettings.newBuilder()
+                            .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
+                            .build();
+            SpeechClient speech = SpeechClient.create(speechSettings);
 
-            BidiStreamingCallable<StreamingRecognizeRequest,StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
-
-            requestObserver = callable.bidiStreamingCall(this);
 
             RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
                     .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
@@ -88,53 +91,46 @@ public class GoogleSpeechRecognizeService implements ApiStreamObserver<Streaming
 
             StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
                     .setConfig(recognitionConfig)
-                    .setInterimResults(true)
-                    .setSingleUtterance(true)
                     .build();
 
-            StreamingRecognizeRequest initRequest = StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build();
-            requestObserver.onNext(initRequest);
+            ResponseApiStreamingObserver<StreamingRecognizeResponse> responseObserver = new ResponseApiStreamingObserver<>();
+            BidiStreamingCallable<StreamingRecognizeRequest,StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
+            requestObserver = callable.bidiStreamingCall(responseObserver);
+
+            //init request
+            requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        //List<StreamingRecognizeResponse> responses = this.getFuture().get();
     }
 
-    @Override
-    public void onNext(StreamingRecognizeResponse streamingRecognizeResponse) {
-        System.out.println("response: "+streamingRecognizeResponse.toString());
-        messages.add(streamingRecognizeResponse);
+
+    class ResponseApiStreamingObserver<T> implements ApiStreamObserver<T> {
+        private final SettableFuture<List<T>> future = SettableFuture.create();
+
+        @Override
+        public void onNext(T message) {
+            System.out.println("onNext response: "+message.toString());
+            messages.add((StreamingRecognizeResponse) message);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.setException(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            System.out.println("onCompleted.");
+            future.set((List<T>) messages);
+        }
+
+        // Returns the SettableFuture object to get received messages / exceptions.
+        public SettableFuture<List<T>> getFuture() {
+            return future;
+        }
     }
 
-    @Override
-    public void onError(Throwable throwable) {
-        future.setException(throwable);
-    }
-
-    @Override
-    public void onCompleted() {
-        System.out.println("recognize completed.");
-        future.set(messages);
-    }
-
-    private static ManagedChannel createChannel(String host, int port, InputStream credentials)
-            throws IOException {
-        GoogleCredentials creds = GoogleCredentials.fromStream(credentials);
-        creds = creds.createScoped(OAUTH2_SCOPES);
-        OkHttpChannelProvider provider = new OkHttpChannelProvider();
-        OkHttpChannelBuilder builder = provider.builderForAddress(host, port);
-        ManagedChannel channel =  builder.intercept(new ClientAuthInterceptor(creds, Executors
-                .newSingleThreadExecutor
-                        ()))
-                .build();
-
-        credentials.close();
-        return channel;
-    }
-
-    public SettableFuture<List<StreamingRecognizeResponse>> getFuture() {
-        return future;
-    }
 }
