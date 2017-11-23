@@ -1,4 +1,4 @@
-package com.romanvoloboev.service;
+package com.romanvoloboev.service.datastruct;
 
 /**
  * In computer science, an associative array, map, or dictionary is an abstract

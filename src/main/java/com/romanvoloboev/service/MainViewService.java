@@ -4,13 +4,18 @@ package com.romanvoloboev.service;
 import com.romanvoloboev.utils.GoogleSpeechRecognizeService;
 import com.romanvoloboev.utils.Microphone;
 import javafx.scene.control.TextArea;
+import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
 import javax.sound.sampled.LineUnavailableException;
+import java.io.*;
+import java.nio.file.Files;
 
 /**
  * Created at 05.10.17
@@ -21,15 +26,46 @@ import javax.sound.sampled.LineUnavailableException;
 public class MainViewService {
     private static final Logger log = LoggerFactory.getLogger(MainViewService.class);
     private final Microphone microphone;
-//    private final GSpeechDuplex duplex;
-    private final Environment env;
+    private final GoogleSpeechRecognizeService googleSpeechRecognizeService;
 
     @Autowired
-    public MainViewService(Environment env) {
-        this.env = env;
-
+    public MainViewService(GoogleSpeechRecognizeService googleSpeechRecognizeService) {
         microphone = new Microphone();
+        this.googleSpeechRecognizeService = googleSpeechRecognizeService;
+        this.googleSpeechRecognizeService.startRecognition();
     }
+
+
+    @PreDestroy
+    private void preDestroy() {
+        this.googleSpeechRecognizeService.stopRecognition();
+    }
+
+
+    public void getText(File file, TextArea textArea) throws IOException {
+        String contentType = Files.probeContentType(file.toPath());
+        if (contentType == null || !contentType.equals("text/plain")
+                && !contentType.equals("application/msword")
+                && !contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
+            throw new IOException();
+        } else if (contentType.equals("application/msword") || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
+            XWPFDocument document = new XWPFDocument(new FileInputStream(file));
+            XWPFWordExtractor extractor = new XWPFWordExtractor(document);
+            textArea.setText(extractor.getText());
+        } else {
+            textArea.setWrapText(true);
+            textArea.clear();
+            Files.lines(file.toPath()).forEachOrdered(s -> textArea.appendText(s+"\n"));
+        }
+    }
+
+
+    public void saveTextAreaToFile(File fileWhereSave, TextArea textArea) throws IOException {
+        try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
+            bf.write(textArea.getText());
+        }
+    }
+
 
     public String getSomeText() {
         return "HELLOO111";
@@ -37,8 +73,8 @@ public class MainViewService {
 
     public void startRecord(TextArea textArea) throws LineUnavailableException, InterruptedException {
 
-        GoogleSpeechRecognizeService googleSpeechRecognizeService = new GoogleSpeechRecognizeService(microphone);
-        googleSpeechRecognizeService.startRecognition(textArea);
+//        GoogleSpeechRecognizeService googleSpeechRecognizeService = new GoogleSpeechRecognizeService(microphone);
+//        googleSpeechRecognizeService.startRecognition(textArea);
         //googleSpeechRecognizeService.stopRecognition();
 
 

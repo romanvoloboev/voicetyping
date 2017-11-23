@@ -11,6 +11,7 @@ import com.google.protobuf.ByteString;
 import javafx.scene.control.TextArea;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
 
 import java.io.FileInputStream;
@@ -23,6 +24,8 @@ import java.util.List;
  *
  * @author romanvoloboev
  */
+
+@Service
 public class GoogleSpeechRecognizeService {
     private static final Logger log = LoggerFactory.getLogger(GoogleSpeechRecognizeService.class);
     private final List<StreamingRecognizeResponse> messages = new ArrayList<>();
@@ -47,7 +50,7 @@ public class GoogleSpeechRecognizeService {
     }
 
 
-    public void startRecognition(TextArea textArea) {
+    public void startRecognition() {
         microphone.startRecording();
         initRecognition();
         new Thread(new Runnable() {
@@ -59,7 +62,7 @@ public class GoogleSpeechRecognizeService {
                     if (bytesRead > 0) {
                         recognizeData(data, bytesRead);
                     } else {
-                        System.out.println("error reading bytes");
+                        log.error("0 bytes readed");
                     }
                 }
             }
@@ -72,6 +75,7 @@ public class GoogleSpeechRecognizeService {
     }
 
     private void recognizeData(byte[] data, int size) {
+        log.info("sending recognition request");
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
@@ -98,10 +102,11 @@ public class GoogleSpeechRecognizeService {
             requestObserver = callable.bidiStreamingCall(responseObserver);
 
             //init request
+            log.info("sending INIT recognition request");
             requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("error: {}", e);
         }
 
     }

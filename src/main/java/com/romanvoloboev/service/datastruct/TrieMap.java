@@ -1,4 +1,4 @@
-package com.romanvoloboev.service;
+package com.romanvoloboev.service.datastruct;
 
 /**
  * A trie used to store key->values pairs, this is an implementation of an

@@ -5,8 +5,7 @@ import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -14,9 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.sound.sampled.LineUnavailableException;
 import java.io.File;
-import java.util.concurrent.Callable;
+import java.io.IOException;
 
 /**
  * Created at 05.10.17
@@ -27,14 +25,6 @@ import java.util.concurrent.Callable;
 public class MainViewController {
     private static final Logger log = LoggerFactory.getLogger(MainViewController.class);
     private final MainViewService mainViewService;
-//    public MenuItem open;
-//    public MenuItem save;
-//    public MenuItem exit;
-//    public MenuItem analyze;
-//    public MenuItem format;
-//    public MenuItem edit;
-//    public MenuItem about;
-
 
     @Autowired
     public MainViewController(MainViewService mainViewService) {
@@ -46,15 +36,40 @@ public class MainViewController {
 
     public void openAction(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("OPen file");
+        fileChooser.setTitle("Выберите файл");
+        FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt", "*.doc", "*.docx");
+        fileChooser.getExtensionFilters().add(extensionFilter);
         File file = fileChooser.showOpenDialog(new Stage());
-        textArea.setText(file.getName());
+        if (file != null) {
+            try {
+                mainViewService.getText(file, textArea);
+            } catch (IOException e) {
+                new Alert(Alert.AlertType.ERROR, "Неподдерживаемый формат файла.").showAndWait();
+            }
+        }
     }
 
     public void exitAction(ActionEvent actionEvent) {
         Platform.exit();
         System.exit(0);
     }
+
+    public void saveAction(ActionEvent actionEvent) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Сохранение в файл");
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("txt files", "*.txt");
+        fileChooser.getExtensionFilters().add(extFilter);
+        File fileWhereSave = fileChooser.showSaveDialog(new Stage());
+        if (fileWhereSave != null) {
+            try {
+                mainViewService.saveTextAreaToFile(fileWhereSave, textArea);
+            } catch (IOException e) {
+                new Alert(Alert.AlertType.ERROR, "Не удалось сохранить файл").showAndWait();
+            }
+        }
+
+    }
+
 
 
 //    public void doStartRecord(ActionEvent event) {

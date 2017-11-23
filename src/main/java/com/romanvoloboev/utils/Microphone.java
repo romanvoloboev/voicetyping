@@ -1,8 +1,10 @@
 package com.romanvoloboev.utils;
 
+import org.springframework.stereotype.Component;
+
 import javax.sound.sampled.*;
 
-
+@Component
 public class Microphone {
 
 	private TargetDataLine targetDataLine;
