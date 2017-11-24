@@ -1,9 +1,11 @@
 package com.romanvoloboev.service;
 
 
-import com.romanvoloboev.utils.GoogleSpeechRecognizeService;
-import com.romanvoloboev.utils.Microphone;
+
+import com.romanvoloboev.utils.v1.GoogleSpeechRecognizeService;
+import com.romanvoloboev.utils.v1.Microphone;
 import javafx.scene.control.TextArea;
+import net.sourceforge.javaflacencoder.FLACFileWriter;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
@@ -28,13 +30,14 @@ public class MainViewService {
     private final Microphone microphone;
     private final GoogleSpeechRecognizeService googleSpeechRecognizeService;
 
+
     @Autowired
     public MainViewService(GoogleSpeechRecognizeService googleSpeechRecognizeService) {
         microphone = new Microphone();
         this.googleSpeechRecognizeService = googleSpeechRecognizeService;
-        this.googleSpeechRecognizeService.startRecognition();
-    }
+        //this.googleSpeechRecognizeService.startRecognition();
 
+    }
 
     @PreDestroy
     private void preDestroy() {
@@ -112,9 +115,9 @@ public class MainViewService {
     }
 
 
-    public void stopRecord() {
-        microphone.stopRecording();
-        log.info("Stopping Speech Recognition, Microphone State is: {}",  microphone.getState());
-    }
+//    public void stopRecord() {
+//        microphone.stopRecording();
+//        log.info("Stopping Speech Recognition, Microphone State is: {}",  microphone.getState());
+//    }
 
 }

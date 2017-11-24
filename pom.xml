@@ -58,11 +58,11 @@
             <artifactId>json</artifactId>
             <version>20170516</version>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>com.github.goxr3plus</groupId>-->
-        <!--<artifactId>java-google-speech-api</artifactId>-->
-        <!--<version>V2.0</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>com.github.goxr3plus</groupId>
+            <artifactId>java-google-speech-api</artifactId>
+            <version>V2.1</version>
+        </dependency>
         <!--<dependency>-->
         <!--<groupId>com.darkprograms.speech</groupId>-->
         <!--<artifactId>java-google-speech-api</artifactId>-->
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-speech</artifactId>
-            <version>0.25.0-alpha</version>
+            <version>0.30.0-alpha</version>
         </dependency>
 
         <dependency>

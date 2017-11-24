@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils;
+package com.romanvoloboev.utils.v1;
 
 import org.springframework.stereotype.Component;
 
@@ -46,7 +46,7 @@ public class Microphone {
 	}
 
 	private AudioFormat getAudioFormat() {
-		float sampleRate = 8000.0F;
+		float sampleRate = 16000;
 		//8000,11025,16000,22050,44100
 		int sampleSizeInBits = 16;
 		//8,16

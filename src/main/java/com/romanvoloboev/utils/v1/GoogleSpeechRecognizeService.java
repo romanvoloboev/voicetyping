@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils;
+package com.romanvoloboev.utils.v1;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.rpc.ApiStreamObserver;
@@ -8,7 +8,6 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ByteString;
-import javafx.scene.control.TextArea;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * Created at 11.10.17
@@ -32,6 +32,7 @@ public class GoogleSpeechRecognizeService {
     private ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
     private final Microphone microphone;
     private int buffSize;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
 
     private Credentials loadCredentialsFromFile() throws IOException {
@@ -44,9 +45,32 @@ public class GoogleSpeechRecognizeService {
         }
     }
 
-    public GoogleSpeechRecognizeService(Microphone microphone) {
+    public GoogleSpeechRecognizeService(Microphone microphone) throws InterruptedException, ExecutionException, TimeoutException {
         this.microphone = microphone;
         buffSize = microphone.getTargetDataLine().getBufferSize();
+        this.microphone.startRecording();
+
+        while (true) {
+            if (executorService.isTerminated()) {
+                log.info("terminated!!!!!!");
+                initRecognition();
+                executorService.submit(new Callable<String>() {
+                    byte data[] = new byte[buffSize];
+                    @Override
+                    public String call() throws Exception {
+                        while (microphone.getState() == Microphone.State.BUSY) {
+                            int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
+                            if (bytesRead > 0) {
+                                recognizeData(data, bytesRead);
+                            } else {
+                                log.error("0 bytes readed");
+                            }
+                        }
+                        return null;
+                    }
+                }).get(10, TimeUnit.SECONDS);
+            }
+        }
     }
 
 
@@ -94,7 +118,7 @@ public class GoogleSpeechRecognizeService {
                     .build();
 
             StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
-                    .setConfig(recognitionConfig)
+                    .setConfig(recognitionConfig).setInterimResults(true)
                     .build();
 
             ResponseApiStreamingObserver<StreamingRecognizeResponse> responseObserver = new ResponseApiStreamingObserver<>();
