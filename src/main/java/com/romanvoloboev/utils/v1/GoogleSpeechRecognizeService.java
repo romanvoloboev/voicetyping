@@ -8,6 +8,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ByteString;
+import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,14 +29,14 @@ import java.util.concurrent.*;
 @Service
 public class GoogleSpeechRecognizeService {
     private static final Logger log = LoggerFactory.getLogger(GoogleSpeechRecognizeService.class);
-    private final List<StreamingRecognizeResponse> messages = new ArrayList<>();
-    private ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
-    private final Microphone microphone;
-    private int buffSize;
-    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static Microphone microphone;
+    private static int buffSize;
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
+    private static ResponseApiStreamingObserver responseObserver;
 
 
-    private Credentials loadCredentialsFromFile() throws IOException {
+    private static Credentials loadCredentialsFromFile() throws IOException {
         String credentialsFile = "classpath:credentials.json";
         log.info("Loading credentials from specified file: {}", credentialsFile);
         try (FileInputStream fileInputStream = new FileInputStream(ResourceUtils.getFile(credentialsFile))) {
@@ -45,117 +46,97 @@ public class GoogleSpeechRecognizeService {
         }
     }
 
-    public GoogleSpeechRecognizeService(Microphone microphone) throws InterruptedException, ExecutionException, TimeoutException {
-        this.microphone = microphone;
-        this.buffSize = microphone.getTargetDataLine().getBufferSize();
-        this.microphone.startRecording();
+    public GoogleSpeechRecognizeService(Microphone mic) throws InterruptedException, ExecutionException, TimeoutException {
+        microphone = mic;
+        buffSize = microphone.getTargetDataLine().getBufferSize();
+        microphone.startRecording();
 
-                initRecognition();
-                executorService.submit(new Callable<String>() {
-                    byte data[] = new byte[buffSize];
-                    @Override
-                    public String call() throws Exception {
-                        while (microphone.getState() == Microphone.State.BUSY) {
-                            int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
-                            if (bytesRead > 0) {
-                                recognizeData(data, bytesRead);
-                            } else {
-                                log.error("0 bytes readed");
-                            }
-                        }
-                        return null;
-                    }
-                });
+        executorService.submit(new RecognitionTask());
 
     }
 
+    private static class RecognitionTask implements Callable<Void> {
+        @Override
+        public Void call() throws Exception {
+            byte data[] = new byte[buffSize];
+            initRecognition();
+//            while (microphone.getState() == Microphone.State.BUSY) {
+            while (requestObserver != null) {
+                int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
+                if (bytesRead > 0) {
+                    recognizeData(data, bytesRead);
+                } else {
+                    log.error("0 bytes readed");
+                }
+            }
+            return null;
+        }
+    }
 
-//    public void startRecognition() {
-//        microphone.startRecording();
-//        initRecognition();
-//        new Thread(new Runnable() {
-//            byte data[] = new byte[buffSize];
-//            @Override
-//            public void run() {
-//                while (microphone.getState() == Microphone.State.BUSY) {
-//                    int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
-//                    if (bytesRead > 0) {
-//                        recognizeData(data, bytesRead);
-//                    } else {
-//                        log.error("0 bytes readed");
-//                    }
-//                }
-//            }
-//        }).start();
-//    }
 
     public void stopRecognition() {
         requestObserver.onCompleted();
         microphone.stopRecording();
     }
 
-    private void recognizeData(byte[] data, int size) {
+    private static void recognizeData(byte[] data, int size) {
         log.info("sending recognition request");
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
-    private void initRecognition() {
-        try {
-            SpeechSettings speechSettings = SpeechSettings.newBuilder()
-                            .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
-                            .build();
-            SpeechClient speech = SpeechClient.create(speechSettings);
+
+    private static void initRecognition() throws IOException {
+
+        SpeechSettings speechSettings = SpeechSettings.newBuilder()
+                .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
+                .build();
+        SpeechClient speech = SpeechClient.create(speechSettings);
 
 
-            RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
-                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                    .setLanguageCode("en-US")
-                    .setSampleRateHertz(16000)
-                    .build();
+        RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
+                .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                .setLanguageCode("ru-RU")
+                .setSampleRateHertz(16000)
+                .build();
 
-            StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
-                    .setConfig(recognitionConfig).setInterimResults(true)
-                    .build();
+        StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
+                .setConfig(recognitionConfig).setInterimResults(true)
+                .build();
 
-            ResponseApiStreamingObserver<StreamingRecognizeResponse> responseObserver = new ResponseApiStreamingObserver<>();
-            BidiStreamingCallable<StreamingRecognizeRequest,StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
-            requestObserver = callable.bidiStreamingCall(responseObserver);
+        responseObserver = new ResponseApiStreamingObserver();
+        BidiStreamingCallable<StreamingRecognizeRequest, StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
+        requestObserver = callable.bidiStreamingCall(responseObserver);
 
-            //init request
-            log.info("sending INIT recognition request");
-            requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
 
-        } catch (IOException e) {
-            log.error("error: {}", e);
-        }
-
+        //init request
+        log.info("sending INIT recognition request");
+        requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
     }
 
-
-    class ResponseApiStreamingObserver<T> implements ApiStreamObserver<T> {
-        private final SettableFuture<List<T>> future = SettableFuture.create();
+    static class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
 
         @Override
-        public void onNext(T message) {
-            System.out.println("onNext response: "+message.toString());
-            messages.add((StreamingRecognizeResponse) message);
+        public void onNext(StreamingRecognizeResponse message) {
+            log.info("==== toString: {}", message.toString());
+
+            if (message.getError().getCode() == 11) {
+                //executorService.shutdownNow();
+                requestObserver.onCompleted();
+                executorService.submit(new RecognitionTask());
+            }
+
+
         }
 
         @Override
         public void onError(Throwable t) {
-            future.setException(t);
         }
 
         @Override
         public void onCompleted() {
-            System.out.println("onCompleted.");
-            future.set((List<T>) messages);
+            if (responseObserver != null) responseObserver = null;
+            if (requestObserver != null) requestObserver = null;
         }
 
-        // Returns the SettableFuture object to get received messages / exceptions.
-        public SettableFuture<List<T>> getFuture() {
-            return future;
-        }
     }
-
 }
