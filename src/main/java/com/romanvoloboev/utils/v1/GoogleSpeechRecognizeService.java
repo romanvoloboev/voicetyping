@@ -47,12 +47,9 @@ public class GoogleSpeechRecognizeService {
 
     public GoogleSpeechRecognizeService(Microphone microphone) throws InterruptedException, ExecutionException, TimeoutException {
         this.microphone = microphone;
-        buffSize = microphone.getTargetDataLine().getBufferSize();
+        this.buffSize = microphone.getTargetDataLine().getBufferSize();
         this.microphone.startRecording();
 
-        while (true) {
-            if (executorService.isTerminated()) {
-                log.info("terminated!!!!!!");
                 initRecognition();
                 executorService.submit(new Callable<String>() {
                     byte data[] = new byte[buffSize];
@@ -68,30 +65,29 @@ public class GoogleSpeechRecognizeService {
                         }
                         return null;
                     }
-                }).get(10, TimeUnit.SECONDS);
-            }
-        }
+                });
+
     }
 
 
-    public void startRecognition() {
-        microphone.startRecording();
-        initRecognition();
-        new Thread(new Runnable() {
-            byte data[] = new byte[buffSize];
-            @Override
-            public void run() {
-                while (microphone.getState() == Microphone.State.BUSY) {
-                    int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
-                    if (bytesRead > 0) {
-                        recognizeData(data, bytesRead);
-                    } else {
-                        log.error("0 bytes readed");
-                    }
-                }
-            }
-        }).start();
-    }
+//    public void startRecognition() {
+//        microphone.startRecording();
+//        initRecognition();
+//        new Thread(new Runnable() {
+//            byte data[] = new byte[buffSize];
+//            @Override
+//            public void run() {
+//                while (microphone.getState() == Microphone.State.BUSY) {
+//                    int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
+//                    if (bytesRead > 0) {
+//                        recognizeData(data, bytesRead);
+//                    } else {
+//                        log.error("0 bytes readed");
+//                    }
+//                }
+//            }
+//        }).start();
+//    }
 
     public void stopRecognition() {
         requestObserver.onCompleted();
