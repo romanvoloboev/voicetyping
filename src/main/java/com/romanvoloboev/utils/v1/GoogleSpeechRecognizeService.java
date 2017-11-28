@@ -6,9 +6,7 @@ import com.google.api.gax.rpc.BidiStreamingCallable;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ByteString;
-import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,8 +14,6 @@ import org.springframework.util.ResourceUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -60,8 +56,7 @@ public class GoogleSpeechRecognizeService {
         public Void call() throws Exception {
             byte data[] = new byte[buffSize];
             initRecognition();
-//            while (microphone.getState() == Microphone.State.BUSY) {
-            while (requestObserver != null) {
+            while (microphone.getState() == Microphone.State.BUSY) {
                 int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
                 if (bytesRead > 0) {
                     recognizeData(data, bytesRead);
@@ -114,23 +109,15 @@ public class GoogleSpeechRecognizeService {
     }
 
     static class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
-
         @Override
         public void onNext(StreamingRecognizeResponse message) {
             if (message.getError().getCode() == 11) {
-                //executorService.shutdownNow();
                 requestObserver.onCompleted();
                 executorService.submit(new RecognitionTask());
             }
 
             log.info("==== raw resp: {}", message.toString());
-            GoogleResponse googleResponse = new GoogleResponse();
-            parseResponse(message.toString(), googleResponse);
-            log.info("==== googleResponse: {}", googleResponse.getResponse());
-
-
-
-
+            log.info("==== msg: {}", message.getResultsList().get(0).getAlternatives(0).getTranscript());
         }
 
         @Override
@@ -145,27 +132,4 @@ public class GoogleSpeechRecognizeService {
 
     }
 
-    private static void parseResponse(String rawResponse , GoogleResponse gr) {
-        if (rawResponse == null || !rawResponse.contains("\"result\"") || rawResponse.equals("{\"result\":[]}")) {
-            return;
-        }
-        gr.getOtherPossibleResponses().clear(); // Emptys the list
-        if (rawResponse.contains("\"confidence\":")) {
-            String confidence = StringUtil.substringBetween(rawResponse, "\"confidence\":", "}");
-            gr.setConfidence(confidence);
-        } else {
-            gr.setConfidence(String.valueOf(1));
-        }
-        String response = StringUtil.substringBetween(rawResponse, "[{\"transcript\":\"", "\"}],");
-        if (response == null) {
-            response = StringUtil.substringBetween(rawResponse, "[{\"transcript\":\"", "\",\"");
-        }
-        gr.setResponse(response);
-        gr.setFinalResponse(rawResponse.contains("\"final\":true"));
-        String[] currentHypos = rawResponse.split("\\[\\{\"transcript\":\"");
-        for (int i = 2; i < currentHypos.length; i++) {
-            String cleaned = currentHypos[i].substring(0, currentHypos[i].indexOf('\"'));
-            gr.getOtherPossibleResponses().add(cleaned);
-        }
-    }
 }

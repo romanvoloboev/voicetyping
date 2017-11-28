@@ -26,13 +26,14 @@ public class MainViewController {
     private static final Logger log = LoggerFactory.getLogger(MainViewController.class);
     private final MainViewService mainViewService;
 
+    @FXML
+    private TextArea textArea;
+
     @Autowired
     public MainViewController(MainViewService mainViewService) {
         this.mainViewService = mainViewService;
+        mainViewService.setTextArea(textArea);
     }
-
-    @FXML
-    private TextArea textArea;
 
     public void openAction(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
@@ -42,7 +43,7 @@ public class MainViewController {
         File file = fileChooser.showOpenDialog(new Stage());
         if (file != null) {
             try {
-                mainViewService.getText(file, textArea);
+                mainViewService.getText(file);
             } catch (IOException e) {
                 new Alert(Alert.AlertType.ERROR, "Неподдерживаемый формат файла.").showAndWait();
             }
@@ -62,7 +63,7 @@ public class MainViewController {
         File fileWhereSave = fileChooser.showSaveDialog(new Stage());
         if (fileWhereSave != null) {
             try {
-                mainViewService.saveTextAreaToFile(fileWhereSave, textArea);
+                mainViewService.saveTextAreaToFile(fileWhereSave);
             } catch (IOException e) {
                 new Alert(Alert.AlertType.ERROR, "Не удалось сохранить файл").showAndWait();
             }

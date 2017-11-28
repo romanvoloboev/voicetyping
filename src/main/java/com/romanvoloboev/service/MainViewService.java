@@ -4,6 +4,7 @@ package com.romanvoloboev.service;
 
 import com.romanvoloboev.utils.v1.GoogleSpeechRecognizeService;
 import com.romanvoloboev.utils.v1.Microphone;
+import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
 import net.sourceforge.javaflacencoder.FLACFileWriter;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
@@ -30,13 +31,13 @@ public class MainViewService {
     private final Microphone microphone;
     private final GoogleSpeechRecognizeService googleSpeechRecognizeService;
 
+    private TextArea textArea;
+
 
     @Autowired
     public MainViewService(GoogleSpeechRecognizeService googleSpeechRecognizeService) {
         microphone = new Microphone();
         this.googleSpeechRecognizeService = googleSpeechRecognizeService;
-        //this.googleSpeechRecognizeService.startRecognition();
-
     }
 
     @PreDestroy
@@ -45,7 +46,7 @@ public class MainViewService {
     }
 
 
-    public void getText(File file, TextArea textArea) throws IOException {
+    public void getText(File file) throws IOException {
         String contentType = Files.probeContentType(file.toPath());
         if (contentType == null || !contentType.equals("text/plain")
                 && !contentType.equals("application/msword")
@@ -63,7 +64,7 @@ public class MainViewService {
     }
 
 
-    public void saveTextAreaToFile(File fileWhereSave, TextArea textArea) throws IOException {
+    public void saveTextAreaToFile(File fileWhereSave) throws IOException {
         try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
             bf.write(textArea.getText());
         }
@@ -112,6 +113,10 @@ public class MainViewService {
 //                textArea.appendText(output);
 
 
+    }
+
+    public void setTextArea(TextArea textArea) {
+        this.textArea = textArea;
     }
 
 
