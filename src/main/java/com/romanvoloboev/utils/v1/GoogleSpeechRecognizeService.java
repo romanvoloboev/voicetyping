@@ -117,13 +117,18 @@ public class GoogleSpeechRecognizeService {
 
         @Override
         public void onNext(StreamingRecognizeResponse message) {
-            log.info("==== toString: {}", message.toString());
-
             if (message.getError().getCode() == 11) {
                 //executorService.shutdownNow();
                 requestObserver.onCompleted();
                 executorService.submit(new RecognitionTask());
             }
+
+            log.info("==== raw resp: {}", message.toString());
+            GoogleResponse googleResponse = new GoogleResponse();
+            parseResponse(message.toString(), googleResponse);
+            log.info("==== googleResponse: {}", googleResponse.toString());
+
+
 
 
         }
@@ -138,5 +143,29 @@ public class GoogleSpeechRecognizeService {
             if (requestObserver != null) requestObserver = null;
         }
 
+    }
+
+    private static void parseResponse(String rawResponse , GoogleResponse gr) {
+        if (rawResponse == null || !rawResponse.contains("\"result\"") || rawResponse.equals("{\"result\":[]}")) {
+            return;
+        }
+        gr.getOtherPossibleResponses().clear(); // Emptys the list
+        if (rawResponse.contains("\"confidence\":")) {
+            String confidence = StringUtil.substringBetween(rawResponse, "\"confidence\":", "}");
+            gr.setConfidence(confidence);
+        } else {
+            gr.setConfidence(String.valueOf(1));
+        }
+        String response = StringUtil.substringBetween(rawResponse, "[{\"transcript\":\"", "\"}],");
+        if (response == null) {
+            response = StringUtil.substringBetween(rawResponse, "[{\"transcript\":\"", "\",\"");
+        }
+        gr.setResponse(response);
+        gr.setFinalResponse(rawResponse.contains("\"final\":true"));
+        String[] currentHypos = rawResponse.split("\\[\\{\"transcript\":\"");
+        for (int i = 2; i < currentHypos.length; i++) {
+            String cleaned = currentHypos[i].substring(0, currentHypos[i].indexOf('\"'));
+            gr.getOtherPossibleResponses().add(cleaned);
+        }
     }
 }
