@@ -100,7 +100,7 @@ public class GoogleSpeechRecognizeService {
                 .build();
 
         StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
-                .setConfig(recognitionConfig).setInterimResults(true)
+                .setConfig(recognitionConfig).setInterimResults(false)
                 .build();
 
         responseObserver = new ResponseApiStreamingObserver();
@@ -126,7 +126,7 @@ public class GoogleSpeechRecognizeService {
             log.info("==== raw resp: {}", message.toString());
             GoogleResponse googleResponse = new GoogleResponse();
             parseResponse(message.toString(), googleResponse);
-            log.info("==== googleResponse: {}", googleResponse.toString());
+            log.info("==== googleResponse: {}", googleResponse.getResponse());
 
 
 
