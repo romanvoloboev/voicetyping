@@ -43,30 +43,30 @@ public class MainViewController  {
     private static int buffSize;
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
-    private static ResponseApiStreamingObserver responseObserver;
+    private ResponseApiStreamingObserver responseObserver;
     private static STATE currentState = STATE.READY_FOR_COMMAND;
     private static final TrieMap<String, Integer> TRIE_MAP = new TrieMap<>();
 
     @FXML
-    private static MenuItem open;
+    private MenuItem open;
 
     @FXML
-    private static MenuItem save;
+    private MenuItem save;
 
     @FXML
-    private static MenuItem exit;
+    private MenuItem exit;
 
     @FXML
-    private static MenuItem analyze;
+    private MenuItem analyze;
 
     @FXML
-    private static MenuItem format;
+    private MenuItem format;
 
     @FXML
-    private static MenuItem edit;
+    private MenuItem edit;
 
     @FXML
-    private static TextArea textArea;
+    private TextArea textArea;
 
     @Autowired
     public MainViewController(Microphone mic) {
@@ -75,25 +75,12 @@ public class MainViewController  {
 
         TRIE_MAP.put("voice файл открыть", Action.OPEN_FILE);
         TRIE_MAP.put("voice файл сохранить", Action.SAVE_FILE);
-        TRIE_MAP.put("voice запись старт", Action.START_RECORDING);
-        TRIE_MAP.put("voice запись стоп", Action.STOP_RECORDING);
+        TRIE_MAP.put("voice запись start", Action.START_RECORDING);
+        TRIE_MAP.put("voice запись stop", Action.STOP_RECORDING);
         TRIE_MAP.put("voice выход", Action.EXIT);
 
         startRecognition();
     }
-
-    private enum STATE {
-        RECORDING, READY_FOR_COMMAND, OPENING_FILE
-    }
-
-    private static class Action {
-        static final Integer OPEN_FILE = 1;
-        static final Integer SAVE_FILE = 2;
-        static final Integer START_RECORDING = 3;
-        static final Integer STOP_RECORDING = 4;
-        static final Integer EXIT = 5;
-    }
-
 
     public void openAction(ActionEvent actionEvent) {
         setCurrentState(STATE.OPENING_FILE);
@@ -109,6 +96,18 @@ public class MainViewController  {
                 new Alert(Alert.AlertType.ERROR, "Неподдерживаемый формат файла.").showAndWait();
             }
         }
+    }
+
+    private enum STATE {
+        RECORDING, READY_FOR_COMMAND, OPENING_FILE
+    }
+
+    private static class Action {
+        static final Integer OPEN_FILE = 1;
+        static final Integer SAVE_FILE = 2;
+        static final Integer START_RECORDING = 3;
+        static final Integer STOP_RECORDING = 4;
+        static final Integer EXIT = 5;
     }
 
     public void exitAction(ActionEvent actionEvent) {
@@ -149,7 +148,6 @@ public class MainViewController  {
         }
     }
 
-
     private void saveTextAreaToFile(File fileWhereSave) throws IOException {
         try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
             bf.write(textArea.getText());
@@ -166,18 +164,22 @@ public class MainViewController  {
         }
     }
 
-    private static class RecognitionTask implements Callable<Void> {
+    private class RecognitionTask implements Callable<Void> {
         @Override
-        public Void call() throws Exception {
-            byte data[] = new byte[buffSize];
-            initRecognition();
-            while (microphone.getState() == Microphone.State.BUSY) {
-                int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
-                if (bytesRead > 0) {
-                    recognizeData(data, bytesRead);
-                } else {
-                    log.error("0 bytes readed");
+        public Void call() {
+            try {
+                byte data[] = new byte[buffSize];
+                initRecognition();
+                while (microphone.getState() == Microphone.State.BUSY) {
+                    int bytesRead = microphone.getTargetDataLine().read(data, 0, buffSize);
+                    if (bytesRead > 0) {
+                        recognizeData(data, bytesRead);
+                    } else {
+                        log.error("0 bytes readed");
+                    }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             return null;
         }
@@ -195,12 +197,12 @@ public class MainViewController  {
     }
 
     private static void recognizeData(byte[] data, int size) {
-        log.debug("sending data for recognition...");
+        log.debug("sending data for recognition... state: {}", currentState);
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
 
-    private static void initRecognition() throws IOException {
+    private void initRecognition() throws IOException {
 
         SpeechSettings speechSettings = SpeechSettings.newBuilder()
                 .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
@@ -222,7 +224,6 @@ public class MainViewController  {
         BidiStreamingCallable<StreamingRecognizeRequest, StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
         requestObserver = callable.bidiStreamingCall(responseObserver);
 
-
         //init request
         log.debug("sending INIT recognition request");
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
@@ -241,7 +242,7 @@ public class MainViewController  {
         }
     }
 
-    static class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
+    class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
         @Override
         public void onNext(StreamingRecognizeResponse message) {
             if (message.getError().getCode() == 11) {
@@ -256,11 +257,11 @@ public class MainViewController  {
                 if (command != -1) {
                     switch (command) {
                         case 1: {
-                            open.fire();
+                            Platform.runLater (() -> open.fire());
                             break;
                         }
                         case 2: {
-                            save.fire();
+                            Platform.runLater (() -> save.fire());
                             break;
                         }
                         case 3: {
@@ -273,12 +274,13 @@ public class MainViewController  {
                     }
                 }
             } else if (currentState == STATE.RECORDING) {
-                textArea.appendText(recognizedResult.concat(". "));
+                Platform.runLater ( () -> textArea.appendText(recognizedResult.concat(". ")));
             }
         }
 
         @Override
         public void onError(Throwable t) {
+            log.error("{}", t);
         }
 
         @Override
