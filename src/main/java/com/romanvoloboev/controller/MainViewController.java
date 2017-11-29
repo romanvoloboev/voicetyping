@@ -7,12 +7,14 @@ import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
-import com.romanvoloboev.utils.v1.Microphone;
+import com.romanvoloboev.utils.Microphone;
+import com.romanvoloboev.utils.datastruct.TrieMap;
 import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -42,21 +44,59 @@ public class MainViewController  {
     private static ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static ApiStreamObserver<StreamingRecognizeRequest> requestObserver;
     private static ResponseApiStreamingObserver responseObserver;
-
-
+    private static STATE currentState = STATE.READY_FOR_COMMAND;
+    private static final TrieMap<String, Integer> TRIE_MAP = new TrieMap<>();
 
     @FXML
-    private TextArea textArea;
+    private static MenuItem open;
+
+    @FXML
+    private static MenuItem save;
+
+    @FXML
+    private static MenuItem exit;
+
+    @FXML
+    private static MenuItem analyze;
+
+    @FXML
+    private static MenuItem format;
+
+    @FXML
+    private static MenuItem edit;
+
+    @FXML
+    private static TextArea textArea;
 
     @Autowired
     public MainViewController(Microphone mic) {
         microphone = mic;
         buffSize = microphone.getTargetDataLine().getBufferSize();
+
+        TRIE_MAP.put("voice файл открыть", Action.OPEN_FILE);
+        TRIE_MAP.put("voice файл сохранить", Action.SAVE_FILE);
+        TRIE_MAP.put("voice запись старт", Action.START_RECORDING);
+        TRIE_MAP.put("voice запись стоп", Action.STOP_RECORDING);
+        TRIE_MAP.put("voice выход", Action.EXIT);
+
         startRecognition();
+    }
+
+    private enum STATE {
+        RECORDING, READY_FOR_COMMAND, OPENING_FILE
+    }
+
+    private static class Action {
+        static final Integer OPEN_FILE = 1;
+        static final Integer SAVE_FILE = 2;
+        static final Integer START_RECORDING = 3;
+        static final Integer STOP_RECORDING = 4;
+        static final Integer EXIT = 5;
     }
 
 
     public void openAction(ActionEvent actionEvent) {
+        setCurrentState(STATE.OPENING_FILE);
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите файл");
         FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt", "*.doc", "*.docx");
@@ -91,9 +131,6 @@ public class MainViewController  {
         }
 
     }
-
-
-
 
     private void getText(File file) throws IOException {
         String contentType = Files.probeContentType(file.toPath());
@@ -158,7 +195,7 @@ public class MainViewController  {
     }
 
     private static void recognizeData(byte[] data, int size) {
-        log.info("sending recognition request");
+        log.debug("sending data for recognition...");
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
@@ -187,8 +224,21 @@ public class MainViewController  {
 
 
         //init request
-        log.info("sending INIT recognition request");
+        log.debug("sending INIT recognition request");
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
+    }
+
+    private static Integer recognizeCommand(String recognizedResult) {
+        recognizedResult = recognizedResult.toLowerCase().trim();
+        log.debug("recognizeCommand received: {}", recognizedResult);
+        if (TRIE_MAP.contains(recognizedResult)) {
+            Integer result = TRIE_MAP.get(recognizedResult);
+            log.debug("recognizeCommand found command: {}", result);
+            return result;
+        } else {
+            log.debug("recognizeCommand command NOT FOUND.");
+            return -1;
+        }
     }
 
     static class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
@@ -198,9 +248,33 @@ public class MainViewController  {
                 requestObserver.onCompleted();
                 executorService.submit(new RecognitionTask());
             }
+            String recognizedResult = message.getResultsList().get(0).getAlternatives(0).getTranscript();
+            log.info("==== recognizedResult: {}", recognizedResult);
 
-            log.info("==== raw resp: {}", message.toString());
-            log.info("==== msg: {}", message.getResultsList().get(0).getAlternatives(0).getTranscript());
+            if (currentState == STATE.READY_FOR_COMMAND) {
+                Integer command = recognizeCommand(recognizedResult);
+                if (command != -1) {
+                    switch (command) {
+                        case 1: {
+                            open.fire();
+                            break;
+                        }
+                        case 2: {
+                            save.fire();
+                            break;
+                        }
+                        case 3: {
+                            setCurrentState(STATE.RECORDING);
+                            break;
+                        }
+                        case 4: {
+                            setCurrentState(STATE.READY_FOR_COMMAND);
+                        }
+                    }
+                }
+            } else if (currentState == STATE.RECORDING) {
+                textArea.appendText(recognizedResult.concat(". "));
+            }
         }
 
         @Override
@@ -213,5 +287,9 @@ public class MainViewController  {
             if (requestObserver != null) requestObserver = null;
         }
 
+    }
+
+    static void setCurrentState(STATE currentState) {
+        MainViewController.currentState = currentState;
     }
 }

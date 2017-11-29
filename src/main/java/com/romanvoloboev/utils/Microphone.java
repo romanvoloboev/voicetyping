@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils.v1;
+package com.romanvoloboev.utils;
 
 import org.springframework.stereotype.Component;
 

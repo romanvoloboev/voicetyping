@@ -1,4 +1,4 @@
-package com.romanvoloboev.service.datastruct;
+package com.romanvoloboev.utils.datastruct;
 
 /**
  * A tree can be defined recursively (locally) as a collection of nodes (starting at a root node),

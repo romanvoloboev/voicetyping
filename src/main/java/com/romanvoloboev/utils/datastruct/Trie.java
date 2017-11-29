@@ -1,4 +1,4 @@
-package com.romanvoloboev.service.datastruct;
+package com.romanvoloboev.utils.datastruct;
 
 import java.util.Arrays;
 
