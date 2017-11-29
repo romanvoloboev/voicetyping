@@ -23,6 +23,8 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
@@ -155,19 +157,18 @@ public class MainViewController  {
     }
 
     private static Credentials loadCredentialsFromFile() throws IOException {
-        String credentialsFile = "classpath:credentials.json";
+        String credentialsFile = "credentials.json";
         log.info("Loading credentials from specified file: {}", credentialsFile);
-        try (FileInputStream fileInputStream = new FileInputStream(ResourceUtils.getFile(credentialsFile))) {
-            Credentials credentials = ServiceAccountCredentials.fromStream(fileInputStream);
-            log.info("Successfully loaded from file.");
-            return credentials;
-        }
+
+        Resource resource = new ClassPathResource(credentialsFile);
+        Credentials credentials = ServiceAccountCredentials.fromStream(resource.getInputStream());
+        log.info("Successfully loaded from file.");
+        return credentials;
     }
 
     private class RecognitionTask implements Callable<Void> {
         @Override
         public Void call() {
-            try {
                 byte data[] = new byte[buffSize];
                 initRecognition();
                 while (microphone.getState() == Microphone.State.BUSY) {
@@ -178,9 +179,6 @@ public class MainViewController  {
                         log.error("0 bytes readed");
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             return null;
         }
     }
@@ -197,36 +195,40 @@ public class MainViewController  {
     }
 
     private static void recognizeData(byte[] data, int size) {
-        log.debug("sending data for recognition... state: {}", currentState);
+        log.info("sending data for recognition... state: {}", currentState);
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
 
-    private void initRecognition() throws IOException {
+    private void initRecognition() {
 
-        SpeechSettings speechSettings = SpeechSettings.newBuilder()
-                .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
-                .build();
-        SpeechClient speech = SpeechClient.create(speechSettings);
+        try {
+            SpeechSettings speechSettings = SpeechSettings.newBuilder()
+                    .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
+                    .build();
+            SpeechClient speech = SpeechClient.create(speechSettings);
 
 
-        RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
-                .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                .setLanguageCode("ru-RU")
-                .setSampleRateHertz(16000)
-                .build();
+            RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
+                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                    .setLanguageCode("ru-RU")
+                    .setSampleRateHertz(16000)
+                    .build();
 
-        StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
-                .setConfig(recognitionConfig).setInterimResults(false)
-                .build();
+            StreamingRecognitionConfig streamingRecognitionConfig = StreamingRecognitionConfig.newBuilder()
+                    .setConfig(recognitionConfig).setInterimResults(false)
+                    .build();
 
-        responseObserver = new ResponseApiStreamingObserver();
-        BidiStreamingCallable<StreamingRecognizeRequest, StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
-        requestObserver = callable.bidiStreamingCall(responseObserver);
+            responseObserver = new ResponseApiStreamingObserver();
+            BidiStreamingCallable<StreamingRecognizeRequest, StreamingRecognizeResponse> callable = speech.streamingRecognizeCallable();
+            requestObserver = callable.bidiStreamingCall(responseObserver);
 
-        //init request
-        log.debug("sending INIT recognition request");
-        requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
+            //init request
+            log.debug("sending INIT recognition request");
+            requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
+        } catch (IOException e) {
+            log.error("ERR: {}", e);
+        }
     }
 
     private static Integer recognizeCommand(String recognizedResult) {
