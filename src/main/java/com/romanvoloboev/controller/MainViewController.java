@@ -226,7 +226,7 @@ public class MainViewController  {
             //init request
             log.debug("sending INIT recognition request");
             requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setStreamingConfig(streamingRecognitionConfig).build());
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("ERR: {}", e);
         }
     }
