@@ -16,6 +16,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
@@ -77,15 +79,15 @@ public class MainViewController  {
 
         TRIE_MAP.put("voice файл открыть", Action.OPEN_FILE);
         TRIE_MAP.put("voice файл сохранить", Action.SAVE_FILE);
-        TRIE_MAP.put("voice запись start", Action.START_RECORDING);
-        TRIE_MAP.put("voice запись stop", Action.STOP_RECORDING);
+        TRIE_MAP.put("voice запись старт", Action.START_RECORDING);
+        TRIE_MAP.put("voice запись стоп", Action.STOP_RECORDING);
         TRIE_MAP.put("voice выход", Action.EXIT);
+        TRIE_MAP.put("voice анализ", Action.ANALYZE);
 
         startRecognition();
     }
 
     public void openAction(ActionEvent actionEvent) {
-        setCurrentState(STATE.OPENING_FILE);
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите файл");
         FileChooser.ExtensionFilter extensionFilter = new FileChooser.ExtensionFilter("Текстовые файлы", "*.txt", "*.doc", "*.docx");
@@ -101,7 +103,7 @@ public class MainViewController  {
     }
 
     private enum STATE {
-        RECORDING, READY_FOR_COMMAND, OPENING_FILE
+        RECORDING, READY_FOR_COMMAND
     }
 
     private static class Action {
@@ -110,6 +112,7 @@ public class MainViewController  {
         static final Integer START_RECORDING = 3;
         static final Integer STOP_RECORDING = 4;
         static final Integer EXIT = 5;
+        static final Integer ANALYZE = 6;
     }
 
     public void exitAction(ActionEvent actionEvent) {
@@ -144,15 +147,15 @@ public class MainViewController  {
             XWPFWordExtractor extractor = new XWPFWordExtractor(document);
             textArea.setText(extractor.getText());
         } else {
-            textArea.setWrapText(true);
-            textArea.clear();
-            Files.lines(file.toPath()).forEachOrdered(s -> textArea.appendText(s+"\n"));
+//            textArea.setWrapText(true);
+//            textArea.clear();
+//            Files.lines(file.toPath()).forEachOrdered(s -> textArea.appendText(s+"\n"));
         }
     }
 
     private void saveTextAreaToFile(File fileWhereSave) throws IOException {
         try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
-            bf.write(textArea.getText());
+           // bf.write(textArea.getText());
         }
     }
 
@@ -251,7 +254,10 @@ public class MainViewController  {
                 requestObserver.onCompleted();
                 executorService.submit(new RecognitionTask());
             }
-            String recognizedResult = message.getResultsList().get(0).getAlternatives(0).getTranscript();
+            String recognizedResult = "";
+            try {
+                recognizedResult = message.getResultsList().get(0).getAlternatives(0).getTranscript();
+            } catch (IndexOutOfBoundsException ignored) {}
             log.info("==== recognizedResult: {}", recognizedResult);
 
             if (currentState == STATE.READY_FOR_COMMAND) {
@@ -270,13 +276,16 @@ public class MainViewController  {
                             setCurrentState(STATE.RECORDING);
                             break;
                         }
-                        case 4: {
-                            setCurrentState(STATE.READY_FOR_COMMAND);
-                        }
                     }
                 }
             } else if (currentState == STATE.RECORDING) {
-                Platform.runLater ( () -> textArea.appendText(recognizedResult.concat(". ")));
+                Integer res = recognizeCommand(recognizedResult);
+                if (res == -1) {
+                    String finalRecognizedResult = recognizedResult;
+                    //Platform.runLater ( () -> textArea.appendText(finalRecognizedResult.concat(". ")));
+                } else if (res == 4) {
+                    setCurrentState(STATE.READY_FOR_COMMAND);
+                }
             }
         }
 
