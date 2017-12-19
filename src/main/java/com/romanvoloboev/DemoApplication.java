@@ -31,6 +31,7 @@ public class DemoApplication extends Application {
 		primaryStage.setTitle("My super app");
 		primaryStage.setScene(new Scene(rootNode));
 		primaryStage.setResizable(false);
+		primaryStage.setWidth(800);
 		primaryStage.show();
 	}
 

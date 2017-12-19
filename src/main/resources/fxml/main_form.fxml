@@ -3,34 +3,33 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.TextFlow?>
 
-<Pane prefHeight="400.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.151" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.romanvoloboev.controller.MainViewController">
-    <AnchorPane layoutX="8.0" layoutY="7.0" prefHeight="388.0" prefWidth="800.0" VBox.vgrow="ALWAYS">
-        <TextArea fx:id="textArea" layoutX="-3.0" layoutY="27.0" prefHeight="358.0" prefWidth="789.0"/>
-        <MenuBar layoutX="-3.0" layoutY="-6.0" prefHeight="33.0" prefWidth="789.0">
+<Pane prefHeight="400.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.romanvoloboev.controller.MainViewController">
+    <AnchorPane layoutX="1.0" layoutY="1.0" prefHeight="394.0" prefWidth="800.0" VBox.vgrow="ALWAYS">
+        <TextFlow fx:id="textFlow" layoutX="1.0" layoutY="23.0" prefHeight="372.0" prefWidth="800.0" />
+        <MenuBar layoutX="-1.0" layoutY="-1.0" prefHeight="25.0" prefWidth="800.0">
             <menus>
                 <Menu mnemonicParsing="false" text="Файл">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Открыть" fx:id="open" onAction="#openAction"/>
-                        <MenuItem mnemonicParsing="false" text="Сохранить" fx:id="save" onAction="#saveAction"/>
-                        <MenuItem mnemonicParsing="false" text="Выход" fx:id="exit" onAction="#exitAction"/>
+                        <MenuItem fx:id="open" mnemonicParsing="false" onAction="#openAction" text="Открыть" />
+                        <MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveAction" text="Сохранить" />
+                        <MenuItem fx:id="exit" mnemonicParsing="false" onAction="#exitAction" text="Выход" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Настройки">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="Анализ текста" fx:id="analyze"/>
-                        <MenuItem mnemonicParsing="false" text="Форматирование" fx:id="format"/>
-                        <MenuItem mnemonicParsing="false" text="Редактор текста" fx:id="edit"/>
+                        <MenuItem fx:id="analyze" mnemonicParsing="false" text="Анализ текста" />
+                        <MenuItem fx:id="format" mnemonicParsing="false" text="Форматирование" />
+                        <MenuItem fx:id="edit" mnemonicParsing="false" text="Редактор текста" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="О программе">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="О программе" fx:id="about"/>
+                        <MenuItem fx:id="about" mnemonicParsing="false" text="О программе" />
                     </items>
                 </Menu>
             </menus>

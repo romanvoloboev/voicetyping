@@ -15,8 +15,6 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextArea;
-import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -27,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.ResourceUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -70,7 +67,7 @@ public class MainViewController  {
     private MenuItem edit;
 
     @FXML
-    private TextArea textArea;
+    private TextFlow textFlow;
 
     @Autowired
     public MainViewController(Microphone mic) {
@@ -145,17 +142,17 @@ public class MainViewController  {
         } else if (contentType.equals("application/msword") || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
             XWPFDocument document = new XWPFDocument(new FileInputStream(file));
             XWPFWordExtractor extractor = new XWPFWordExtractor(document);
-            textArea.setText(extractor.getText());
+           // textFlow.setText(extractor.getText());
         } else {
-//            textArea.setWrapText(true);
-//            textArea.clear();
-//            Files.lines(file.toPath()).forEachOrdered(s -> textArea.appendText(s+"\n"));
+//            textFlow.setWrapText(true);
+//            textFlow.clear();
+//            Files.lines(file.toPath()).forEachOrdered(s -> textFlow.appendText(s+"\n"));
         }
     }
 
     private void saveTextAreaToFile(File fileWhereSave) throws IOException {
         try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
-           // bf.write(textArea.getText());
+           // bf.write(textFlow.getText());
         }
     }
 
@@ -282,7 +279,7 @@ public class MainViewController  {
                 Integer res = recognizeCommand(recognizedResult);
                 if (res == -1) {
                     String finalRecognizedResult = recognizedResult;
-                    //Platform.runLater ( () -> textArea.appendText(finalRecognizedResult.concat(". ")));
+                    //Platform.runLater ( () -> textFlow.appendText(finalRecognizedResult.concat(". ")));
                 } else if (res == 4) {
                     setCurrentState(STATE.READY_FOR_COMMAND);
                 }
