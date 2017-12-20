@@ -13,9 +13,13 @@ import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
+import javafx.scene.layout.Region;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.scene.web.HTMLEditor;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
@@ -28,6 +32,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,6 +76,7 @@ public class MainViewController  {
 
     @Autowired
     public MainViewController(Microphone mic) {
+
         microphone = mic;
         buffSize = microphone.getTargetDataLine().getBufferSize();
 
@@ -97,6 +103,31 @@ public class MainViewController  {
                 new Alert(Alert.AlertType.ERROR, "Неподдерживаемый формат файла.").showAndWait();
             }
         }
+    }
+
+    public void colorizeAction(ActionEvent actionEvent) {
+        String fullText = getStringFromTextFlow(textFlow);
+        List<String> list = new ArrayList<>(Arrays.asList(fullText.split(" ")));
+        log.info("arr: {}", list);
+        textFlow.getChildren().clear();
+
+        list.forEach(w -> {
+            Text text = new Text(w+" ");
+            float n = new Random().nextFloat();
+            log.info("RND: {}", n);
+            if (n < 0.30 && w.length() > 1) {
+                text.setStyle("-fx-fill: #4F8A10;-fx-font-weight:bold;");
+            }
+            textFlow.getChildren().add(text);
+        });
+    }
+
+    private static String getStringFromTextFlow(TextFlow tf) {
+        StringBuilder sb = new StringBuilder();
+        tf.getChildren().parallelStream()
+                .filter(t -> Text.class.equals(t.getClass()))
+                .forEach(t -> sb.append(((Text) t).getText()));
+        return sb.toString();
     }
 
     private enum STATE {
@@ -142,11 +173,10 @@ public class MainViewController  {
         } else if (contentType.equals("application/msword") || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
             XWPFDocument document = new XWPFDocument(new FileInputStream(file));
             XWPFWordExtractor extractor = new XWPFWordExtractor(document);
-           // textFlow.setText(extractor.getText());
+            textFlow.getChildren().add(new Text(extractor.getText()));
         } else {
-//            textFlow.setWrapText(true);
-//            textFlow.clear();
-//            Files.lines(file.toPath()).forEachOrdered(s -> textFlow.appendText(s+"\n"));
+            textFlow.getChildren().clear();
+            Files.lines(file.toPath()).forEachOrdered(s -> textFlow.getChildren().add(new Text(s+"\n")));
         }
     }
 
@@ -198,7 +228,6 @@ public class MainViewController  {
         log.info("sending data for recognition... state: {}", currentState);
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
-
 
     private void initRecognition() {
 
@@ -279,7 +308,7 @@ public class MainViewController  {
                 Integer res = recognizeCommand(recognizedResult);
                 if (res == -1) {
                     String finalRecognizedResult = recognizedResult;
-                    //Platform.runLater ( () -> textFlow.appendText(finalRecognizedResult.concat(". ")));
+                    Platform.runLater ( () -> textFlow.getChildren().add(new Text(finalRecognizedResult.concat(". "))));
                 } else if (res == 4) {
                     setCurrentState(STATE.READY_FOR_COMMAND);
                 }

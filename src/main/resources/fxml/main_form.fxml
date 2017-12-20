@@ -8,21 +8,21 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.TextFlow?>
 
-<Pane prefHeight="400.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.romanvoloboev.controller.MainViewController">
+<Pane prefHeight="690.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.151" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.romanvoloboev.controller.MainViewController">
     <AnchorPane layoutX="1.0" layoutY="1.0" prefHeight="394.0" prefWidth="800.0" VBox.vgrow="ALWAYS">
-        <TextFlow fx:id="textFlow" layoutX="1.0" layoutY="23.0" prefHeight="372.0" prefWidth="800.0" />
+        <TextFlow fx:id="textFlow" layoutX="-1.0" layoutY="28.0" prefHeight="369.0" prefWidth="793.0" style="-fx-background-color: white;" />
         <MenuBar layoutX="-1.0" layoutY="-1.0" prefHeight="25.0" prefWidth="800.0">
             <menus>
                 <Menu mnemonicParsing="false" text="Файл">
                     <items>
                         <MenuItem fx:id="open" mnemonicParsing="false" onAction="#openAction" text="Открыть" />
-                        <MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveAction" text="Сохранить" />
+                        <!--<MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveAction" text="Сохранить" />-->
                         <MenuItem fx:id="exit" mnemonicParsing="false" onAction="#exitAction" text="Выход" />
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Настройки">
                     <items>
-                        <MenuItem fx:id="analyze" mnemonicParsing="false" text="Анализ текста" />
+                        <MenuItem fx:id="analyze" mnemonicParsing="false" onAction="#colorizeAction" text="Анализ текста" />
                         <MenuItem fx:id="format" mnemonicParsing="false" text="Форматирование" />
                         <MenuItem fx:id="edit" mnemonicParsing="false" text="Редактор текста" />
                     </items>
@@ -35,4 +35,5 @@
             </menus>
         </MenuBar>
     </AnchorPane>
+   <TextFlow layoutY="412.0" prefHeight="96.0" prefWidth="793.0" style="-fx-background-color: white;" />
 </Pane>
