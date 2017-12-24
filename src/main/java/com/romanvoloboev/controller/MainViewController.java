@@ -7,7 +7,9 @@ import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
+import com.romanvoloboev.utils.Http;
 import com.romanvoloboev.utils.Microphone;
+import com.romanvoloboev.utils.ResultResponseDTO;
 import com.romanvoloboev.utils.datastruct.TrieMap;
 import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
@@ -22,8 +24,10 @@ import javafx.scene.text.TextFlow;
 import javafx.scene.web.HTMLEditor;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.tomcat.util.buf.Utf8Decoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +35,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -52,6 +59,9 @@ public class MainViewController  {
     private ResponseApiStreamingObserver responseObserver;
     private static STATE currentState = STATE.READY_FOR_COMMAND;
     private static final TrieMap<String, Integer> TRIE_MAP = new TrieMap<>();
+
+    @Autowired
+    private Http http;
 
     @FXML
     private MenuItem open;
@@ -105,21 +115,28 @@ public class MainViewController  {
         }
     }
 
+
     public void colorizeAction(ActionEvent actionEvent) {
         String fullText = getStringFromTextFlow(textFlow);
-        List<String> list = new ArrayList<>(Arrays.asList(fullText.split(" ")));
-        log.info("arr: {}", list);
-        textFlow.getChildren().clear();
+        log.info("START PROCESSING FOR TEXT: {}", fullText);
+        ResultResponseDTO resultResponseDTO = http.sendText(fullText);
+        log.info("END PROCESSING WITH RESULT");
 
-        list.forEach(w -> {
-            Text text = new Text(w+" ");
-            float n = new Random().nextFloat();
-            log.info("RND: {}", n);
-            if (n < 0.30 && w.length() > 1) {
-                text.setStyle("-fx-fill: #4F8A10;-fx-font-weight:bold;");
-            }
-            textFlow.getChildren().add(text);
-        });
+//        List<String> list = new ArrayList<>(Arrays.asList(fullText.split(" ")));
+//        log.info("arr: {}", list);
+
+
+//        textFlow.getChildren().clear();
+//
+//        list.forEach(w -> {
+//            Text text = new Text(w+" ");
+//            float n = new Random().nextFloat();
+//            log.info("RND: {}", n);
+//            if (n < 0.30 && w.length() > 1) {
+//                text.setStyle("-fx-fill: #4F8A10;-fx-font-weight:bold;");
+//            }
+//            textFlow.getChildren().add(text);
+//        });
     }
 
     private static String getStringFromTextFlow(TextFlow tf) {
