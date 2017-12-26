@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpMessageConverterExtractor;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -56,14 +57,26 @@ public class Http {
     }
 
     public ResultResponseDTO sendText(String text) {
-//        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
-//        reqBody.add("userkey", userkey);
-//        reqBody.add("text", text);
-//        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
-//        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
-//        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
-//
-//        log.info("res: {}", text_uid);
+        log.info("---- 1");
+        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
+        log.info("---- 2");
+        reqBody.add("userkey", userkey);
+        reqBody.add("text", text);
+        log.info("---- 3");
+        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
+        log.info("---- 4");
+        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = null;
+        try {
+            sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        log.info("sendResponseDTOResponseEntity: {}", sendResponseDTOResponseEntity);
+        log.info("---- 5");
+        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
+        log.info("---- 6");
+
+        log.info("res: {}", text_uid);
 
         MultiValueMap<String, String> resultBody = new LinkedMultiValueMap<>(3);
         resultBody.add("userkey", userkey);
