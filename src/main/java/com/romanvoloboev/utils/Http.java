@@ -1,8 +1,9 @@
 package com.romanvoloboev.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.google.gson.Gson;
+import javafx.geometry.Pos;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.layout.VBox;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +16,9 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpMessageConverterExtractor;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.Arrays;
 import java.util.Collections;
 
 @Slf4j
@@ -57,30 +53,19 @@ public class Http {
     }
 
     public ResultResponseDTO sendText(String text) {
-        log.info("---- 1");
-        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
-        log.info("---- 2");
-        reqBody.add("userkey", userkey);
-        reqBody.add("text", text);
-        log.info("---- 3");
-        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
-        log.info("---- 4");
-        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = null;
-        try {
-            sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        log.info("sendResponseDTOResponseEntity: {}", sendResponseDTOResponseEntity);
-        log.info("---- 5");
-        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
-        log.info("---- 6");
-
-        log.info("res: {}", text_uid);
+//        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
+//        reqBody.add("userkey", userkey);
+//        reqBody.add("text", text);
+//        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
+//        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
+//        log.info("sendResponseDTOResponseEntity: {}", sendResponseDTOResponseEntity);
+//        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
+//
+//        log.info("res: {}", text_uid);
 
         MultiValueMap<String, String> resultBody = new LinkedMultiValueMap<>(3);
         resultBody.add("userkey", userkey);
-        resultBody.add("uid", "5a40023d5dca7");
+        resultBody.add("uid", "5a47c58862abf");
         resultBody.add("jsonvisible", "detail");
         HttpEntity<MultiValueMap> resEntity = new HttpEntity<>(resultBody, headers);
 

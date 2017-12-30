@@ -15,10 +15,14 @@ import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.scene.web.HTMLEditor;
@@ -40,9 +44,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * Created at 05.10.17
@@ -67,6 +69,9 @@ public class MainViewController  {
     private MenuItem open;
 
     @FXML
+    public StackPane root;
+
+    @FXML
     private MenuItem save;
 
     @FXML
@@ -83,6 +88,12 @@ public class MainViewController  {
 
     @FXML
     private TextFlow textFlow;
+
+    @FXML
+    private TextFlow resultFlow;
+
+    @FXML
+    private VBox mainVbox;
 
     @Autowired
     public MainViewController(Microphone mic) {
@@ -117,10 +128,51 @@ public class MainViewController  {
 
 
     public void colorizeAction(ActionEvent actionEvent) {
+        stopRecognition();
         String fullText = getStringFromTextFlow(textFlow);
         log.info("START PROCESSING FOR TEXT: {}", fullText);
-        ResultResponseDTO resultResponseDTO = http.sendText(fullText);
-        log.info("END PROCESSING WITH RESULT");
+        final VBox[] box = new VBox[1];
+        ProgressIndicator pi = new ProgressIndicator();
+        box[0] = new VBox(pi);
+        box[0].setAlignment(Pos.CENTER);
+        mainVbox.setDisable(true);
+        root.getChildren().add(box[0]);
+        log.info("~~~~~1111");
+        Platform.runLater(()-> {
+
+
+            Future<ResultResponseDTO> future = Executors.newSingleThreadExecutor().submit(() ->  http.sendText(fullText));
+
+            do {
+                if (future.isDone()) {
+                    try {
+                        ResultResponseDTO res = future.get();
+                        log.info("RESULT:::::::: {}", res);
+
+                        mainVbox.setDisable(false);
+                        root.getChildren().removeAll(box[0]);
+                        resultFlow.getChildren().clear();
+                        resultFlow.getChildren().add(new Text("Уникальность текста: "+res.getText_unique() +"%."));
+                        if (res.getResult_json().getUrls().size() > 0) {
+                            resultFlow.getChildren().add(new Text("\nСсылки:"));
+                            for (ResultResponseDTO.ResultJson.Urls url : res.getResult_json().getUrls()) {
+                                resultFlow.getChildren().add(new Text("\nURL: "+url.getUrl()+", процент плагиата по ссылке: "+url.getPlagiat()+"%."));
+                            }
+
+                        }
+                        startRecognition();
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } while (!future.isDone());
+
+        });
+
+
+
+
+
 
 //        List<String> list = new ArrayList<>(Arrays.asList(fullText.split(" ")));
 //        log.info("arr: {}", list);
