@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils;
+package com.rv.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;

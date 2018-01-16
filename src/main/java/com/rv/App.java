@@ -1,4 +1,4 @@
-package com.romanvoloboev;
+package com.rv;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

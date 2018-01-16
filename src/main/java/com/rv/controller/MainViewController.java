@@ -1,4 +1,4 @@
-package com.romanvoloboev.controller;
+package com.rv.controller;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.rpc.ApiStreamObserver;
@@ -7,31 +7,26 @@ import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1.*;
 import com.google.protobuf.ByteString;
-import com.romanvoloboev.utils.Http;
-import com.romanvoloboev.utils.Microphone;
-import com.romanvoloboev.utils.ResultResponseDTO;
-import com.romanvoloboev.utils.datastruct.TrieMap;
+import com.rv.utils.Http;
+import com.rv.utils.Microphone;
+import com.rv.utils.ResultResponseDTO;
+import com.rv.utils.datastruct.TrieMap;
 import de.felixroske.jfxsupport.FXMLController;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import javafx.scene.web.HTMLEditor;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.tomcat.util.buf.Utf8Decoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,12 +35,8 @@ import org.springframework.core.io.Resource;
 
 import java.io.*;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -184,7 +175,7 @@ public class MainViewController  {
         textFlow.getChildren().clear();
         resultFlow.getChildren().clear();
         try {
-            Files.lines(Paths.get(ClassLoader.getSystemResource("res.txt")
+            Files.lines(Paths.get(ClassLoader.getSystemResource("2.txt")
                     .toURI())).forEachOrdered(s -> textFlow.getChildren().add(new Text(s+"\n")));
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();

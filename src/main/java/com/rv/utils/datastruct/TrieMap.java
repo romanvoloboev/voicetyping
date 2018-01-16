@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils.datastruct;
+package com.rv.utils.datastruct;
 
 /**
  * A trie used to store key->values pairs, this is an implementation of an

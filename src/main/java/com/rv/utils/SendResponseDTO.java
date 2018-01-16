@@ -1,4 +1,4 @@
-package com.romanvoloboev.utils;
+package com.rv.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
