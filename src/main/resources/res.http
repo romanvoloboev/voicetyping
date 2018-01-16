@@ -1,1 +1,3 @@
 POST http://api.text.ru/account?method=get_packages_info&userkey=25d9645e0673d7d78979e230e3383faf
+
+###

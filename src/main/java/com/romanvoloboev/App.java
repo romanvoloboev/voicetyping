@@ -10,17 +10,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
-public class DemoApplication extends Application {
+public class App extends Application {
 	private ConfigurableApplicationContext springContext;
 	private Parent rootNode;
 
 	public static void main(String[] args) {
-		launch(DemoApplication.class, args);
+		launch(App.class, args);
 	}
 
 	@Override
 	public void init() throws Exception {
-		springContext = SpringApplication.run(DemoApplication.class);
+		springContext = SpringApplication.run(App.class);
 		FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/main_form.fxml"));
 		fxmlLoader.setControllerFactory(springContext::getBean);
 		rootNode = fxmlLoader.load();

@@ -39,10 +39,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -127,7 +129,7 @@ public class MainViewController  {
     }
 
 
-    public void colorizeAction(ActionEvent actionEvent) {
+    public void analyzeText(ActionEvent actionEvent) {
         stopRecognition();
         String fullText = getStringFromTextFlow(textFlow);
         log.info("START PROCESSING FOR TEXT: {}", fullText);
@@ -168,27 +170,6 @@ public class MainViewController  {
             } while (!future.isDone());
 
         });
-
-
-
-
-
-
-//        List<String> list = new ArrayList<>(Arrays.asList(fullText.split(" ")));
-//        log.info("arr: {}", list);
-
-
-//        textFlow.getChildren().clear();
-//
-//        list.forEach(w -> {
-//            Text text = new Text(w+" ");
-//            float n = new Random().nextFloat();
-//            log.info("RND: {}", n);
-//            if (n < 0.30 && w.length() > 1) {
-//                text.setStyle("-fx-fill: #4F8A10;-fx-font-weight:bold;");
-//            }
-//            textFlow.getChildren().add(text);
-//        });
     }
 
     private static String getStringFromTextFlow(TextFlow tf) {
@@ -198,6 +179,19 @@ public class MainViewController  {
                 .forEach(t -> sb.append(((Text) t).getText()));
         return sb.toString();
     }
+
+    public void generateUniqueText(ActionEvent actionEvent) {
+        textFlow.getChildren().clear();
+        resultFlow.getChildren().clear();
+        try {
+            Files.lines(Paths.get(ClassLoader.getSystemResource("res.txt")
+                    .toURI())).forEachOrdered(s -> textFlow.getChildren().add(new Text(s+"\n")));
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+        }
+        resultFlow.getChildren().add(new Text("Уникальность текста: 100%."));
+    }
+
 
     private enum STATE {
         RECORDING, READY_FOR_COMMAND

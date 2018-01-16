@@ -1,9 +1,6 @@
 package com.romanvoloboev.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javafx.geometry.Pos;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.VBox;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,19 +50,19 @@ public class Http {
     }
 
     public ResultResponseDTO sendText(String text) {
-//        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
-//        reqBody.add("userkey", userkey);
-//        reqBody.add("text", text);
-//        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
-//        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
-//        log.info("sendResponseDTOResponseEntity: {}", sendResponseDTOResponseEntity);
-//        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
-//
-//        log.info("res: {}", text_uid);
+        MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
+        reqBody.add("userkey", userkey);
+        reqBody.add("text", text);
+        HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);
+        ResponseEntity<SendResponseDTO> sendResponseDTOResponseEntity = restTemplate.postForEntity(url, entity, SendResponseDTO.class);
+        log.info("sendResponseDTOResponseEntity: {}", sendResponseDTOResponseEntity);
+        String text_uid = sendResponseDTOResponseEntity.getBody().getText_uid();
+
+        log.info("res: {}", text_uid);
 
         MultiValueMap<String, String> resultBody = new LinkedMultiValueMap<>(3);
         resultBody.add("userkey", userkey);
-        resultBody.add("uid", "5a47c58862abf");
+        resultBody.add("uid", text_uid);
         resultBody.add("jsonvisible", "detail");
         HttpEntity<MultiValueMap> resEntity = new HttpEntity<>(resultBody, headers);
 
