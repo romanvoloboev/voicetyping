@@ -51,6 +51,10 @@ public class Http {
 
     public ResultResponseDTO sendText(String text) {
         MultiValueMap<String, String> reqBody = new LinkedMultiValueMap<>(2);
+
+        log.info("key: {}", userkey);
+        log.info("text: {}", text);
+
         reqBody.add("userkey", userkey);
         reqBody.add("text", text);
         HttpEntity<MultiValueMap> entity = new HttpEntity<>(reqBody, headers);

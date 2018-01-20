@@ -24,7 +24,7 @@
                             <MenuItem fx:id="open" mnemonicParsing="false" onAction="#openAction" text="Открыть" />
                             <MenuItem fx:id="exit1" mnemonicParsing="false" onAction="#exitAction" text="Печать" />
                             <MenuItem fx:id="exit11" mnemonicParsing="false" onAction="#exitAction" text="Настройки пользователя" />
-                            <!--<MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveAction" text="Сохранить" />-->
+                            <MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveAction" text="Сохранить" />
                             <MenuItem fx:id="exit" mnemonicParsing="false" onAction="#exitAction" text="Выход" />
                         </items>
                     </Menu>

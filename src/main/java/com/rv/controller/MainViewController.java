@@ -16,6 +16,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressIndicator;
@@ -94,16 +95,24 @@ public class MainViewController  {
         microphone = mic;
         buffSize = microphone.getTargetDataLine().getBufferSize();
 
-        TRIE_MAP.put("voice файл открыть", Action.OPEN_FILE);
-        TRIE_MAP.put("voice файл сохранить", Action.SAVE_FILE);
+        TRIE_MAP.put("voice открыть", Action.OPEN_FILE);
+        TRIE_MAP.put("voice сохранить", Action.SAVE_FILE);
+
         TRIE_MAP.put("voice запись старт", Action.START_RECORDING);
+        TRIE_MAP.put("запись старт", Action.START_RECORDING);
+        TRIE_MAP.put("voice запись start", Action.START_RECORDING);
+
+        TRIE_MAP.put("запись стоп", Action.STOP_RECORDING);
         TRIE_MAP.put("voice запись стоп", Action.STOP_RECORDING);
+        TRIE_MAP.put("voice запись stop", Action.STOP_RECORDING);
+
         TRIE_MAP.put("voice выход", Action.EXIT);
         TRIE_MAP.put("voice анализ", Action.ANALYZE);
 
         startRecognition();
     }
 
+    /// открыть диалоговое окно для выбора файла
     public void openAction(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Выберите файл");
@@ -119,7 +128,7 @@ public class MainViewController  {
         }
     }
 
-
+    // анализ текста по нажатию на пункт меню
     public void analyzeText(ActionEvent actionEvent) {
         stopRecognition();
         String fullText = getStringFromTextFlow(textFlow);
@@ -130,7 +139,7 @@ public class MainViewController  {
         box[0].setAlignment(Pos.CENTER);
         mainVbox.setDisable(true);
         root.getChildren().add(box[0]);
-        log.info("~~~~~1111");
+        //log.info("~~~~~1111");
         Platform.runLater(()-> {
 
 
@@ -163,6 +172,7 @@ public class MainViewController  {
         });
     }
 
+    // считывание текста с верхней текстового поля
     private static String getStringFromTextFlow(TextFlow tf) {
         StringBuilder sb = new StringBuilder();
         tf.getChildren().parallelStream()
@@ -171,6 +181,7 @@ public class MainViewController  {
         return sb.toString();
     }
 
+    // генерация уникального текста по нажатию на пункт меню
     public void generateUniqueText(ActionEvent actionEvent) {
         textFlow.getChildren().clear();
         resultFlow.getChildren().clear();
@@ -202,6 +213,7 @@ public class MainViewController  {
         System.exit(0);
     }
 
+    // сохранение в файл
     public void saveAction(ActionEvent actionEvent) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Сохранение в файл");
@@ -218,6 +230,7 @@ public class MainViewController  {
 
     }
 
+    // открыть текстовый файл
     private void getText(File file) throws IOException {
         String contentType = Files.probeContentType(file.toPath());
         if (contentType == null || !contentType.equals("text/plain")
@@ -234,12 +247,21 @@ public class MainViewController  {
         }
     }
 
+    // сохранить текст из окна в файл
     private void saveTextAreaToFile(File fileWhereSave) throws IOException {
         try (BufferedWriter bf = new BufferedWriter(new FileWriter(fileWhereSave))) {
-           // bf.write(textFlow.getText());
+            StringBuilder sb = new StringBuilder();
+            for (Node node : textFlow.getChildren()) {
+                if (node instanceof Text) {
+                    sb.append(((Text) node).getText());
+                }
+            }
+            String fullText = sb.toString();
+            bf.write(fullText);
         }
     }
 
+    // загрузка данных пользователя для работы с распознаванием речи
     private static Credentials loadCredentialsFromFile() throws IOException {
         String credentialsFile = "credentials.json";
         log.info("Loading credentials from specified file: {}", credentialsFile);
@@ -250,7 +272,8 @@ public class MainViewController  {
         return credentials;
     }
 
-    private class RecognitionTask implements Callable<Void> {
+    // класс-поток в котором запускается распознавание речи
+       private class RecognitionTask implements Callable<Void> {
         @Override
         public Void call() {
                 byte data[] = new byte[buffSize];
@@ -267,24 +290,26 @@ public class MainViewController  {
         }
     }
 
-
+    // остановка потока записи голоса
     public void stopRecognition() {
         requestObserver.onCompleted();
         microphone.stopRecording();
     }
 
+    // запуск потока записи голоса
     public void startRecognition() {
         microphone.startRecording();
         executorService.submit(new RecognitionTask());
     }
 
+    // отправка данных на сервер гугла для распознавания
     private static void recognizeData(byte[] data, int size) {
-        log.info("sending data for recognition... state: {}", currentState);
+        //log.info("current state: {}", currentState);
         requestObserver.onNext(StreamingRecognizeRequest.newBuilder().setAudioContent(ByteString.copyFrom(data, 0, size)).build());
     }
 
+    // первичная инициализация библиотеки гугла для распознавания
     private void initRecognition() {
-
         try {
             SpeechSettings speechSettings = SpeechSettings.newBuilder()
                     .setCredentialsProvider(FixedCredentialsProvider.create(loadCredentialsFromFile()))
@@ -314,6 +339,7 @@ public class MainViewController  {
         }
     }
 
+    // определение действия по распознаной команде
     private static Integer recognizeCommand(String recognizedResult) {
         recognizedResult = recognizedResult.toLowerCase().trim();
         log.debug("recognizeCommand received: {}", recognizedResult);
@@ -327,6 +353,7 @@ public class MainViewController  {
         }
     }
 
+    // класс отвечающий за обработку результата-ответа от сервиса распознавания
     class ResponseApiStreamingObserver implements ApiStreamObserver<StreamingRecognizeResponse> {
         @Override
         public void onNext(StreamingRecognizeResponse message) {
@@ -356,6 +383,9 @@ public class MainViewController  {
                             setCurrentState(STATE.RECORDING);
                             break;
                         }
+                        case 6: {
+                            Platform.runLater(() -> analyze.fire());
+                        }
                     }
                 }
             } else if (currentState == STATE.RECORDING) {
@@ -379,9 +409,9 @@ public class MainViewController  {
             if (responseObserver != null) responseObserver = null;
             if (requestObserver != null) requestObserver = null;
         }
-
     }
 
+    // устновка состояния приложения
     static void setCurrentState(STATE currentState) {
         MainViewController.currentState = currentState;
     }
